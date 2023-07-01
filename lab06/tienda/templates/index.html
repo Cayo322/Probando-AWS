@@ -1,0 +1,171 @@
+{% extends "layout.html" %} 
+{% block content %}
+<!-- Block Content -->
+<!-- Dentro del formulario -->
+<form action="" method="GET" class="form-inline my-2 my-lg-0">
+  <input
+    class="form-control mr-sm-2"
+    type="search"
+    name="q"
+    placeholder="Buscar productos"
+    aria-label="Search"
+    value="{{ request.GET.q }}"
+  />
+  <button class="btn btn-outline-success my-2 my-sm-0" type="submit">
+    Buscar
+  </button>
+</form>
+
+<!-- Dentro del bloque de contenido -->
+<div class="row">
+  <!-- Agregar cuadro de elementos seleccionados (carrito de compras) -->
+  <div id="carrito" class="col-lg-3 mb-4">
+    <h4>Lista de pedidos</h4>
+
+    <ul id="items-seleccionados" class="list-group">
+      <!-- Los elementos seleccionados se mostrarán aquí -->
+    </ul>
+    <button id="limpiar-carrito" class="btn btn-danger">Limpiar Lista</button>
+    <button id="calcular-total" class="btn btn-primary">Calcular Total</button>
+    <p id="total" class="mt-2">Total: S/ 0.00</p>
+  </div>
+
+  <!-- Mostrar productos -->
+  <div class="col-lg-9">
+    <div class="row">
+      {% for prod in productos %}
+      <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card h-100">
+          <a href="/producto/{{ prod.id }}/"
+            ><img class="card-img-top" src="{{ prod.imagen.url }}" alt=""
+          /></a>
+          <div class="card-footer">
+            <button
+              class="btn btn-primary agregar-carrito"
+              data-producto-id="{{ prod.id }}"
+              data-producto-nombre="{{ prod.nombre }}"
+              data-producto-precio="{{ prod.precio }}"
+            >
+              Agregar a pedidos
+            </button>
+          </div>
+          <div class="card-body">
+            <h4 class="card-title">
+              <a href="/producto/{{ prod.id }}/">{{ prod.nombre }}</a>
+            </h4>
+            <h5>S/ {{ prod.precio }}</h5>
+            <p class="card-text">Categoria: {{ prod.categoria.nombre }}</p>
+          </div>
+          <div class="card-footer">
+            <small class="text-muted"
+              >&#9733; &#9733; &#9733; &#9733; &#9734;</small
+            >
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Script JavaScript -->
+<script>
+  // Obtener elementos relevantes del DOM
+  // Obtener elementos relevantes del DOM
+const botonesAgregarCarrito = document.querySelectorAll(".agregar-carrito");
+const itemsSeleccionados = document.getElementById("items-seleccionados");
+const limpiarCarritoBtn = document.getElementById("limpiar-carrito");
+const calcularTotalBtn = document.getElementById("calcular-total");
+const totalElement = document.getElementById("total");
+
+// Función para agregar un producto al carrito
+function agregarAlCarrito(productoId, productoNombre, productoPrecio) {
+  const nuevoItem = document.createElement("li");
+  nuevoItem.classList.add("list-group-item");
+  nuevoItem.dataset.productoId = productoId;
+  nuevoItem.dataset.productoPrecio = productoPrecio; // Agregar precio del producto al elemento
+  nuevoItem.textContent = productoNombre + " - S/ " + productoPrecio;
+  itemsSeleccionados.appendChild(nuevoItem);
+  guardarProductosSeleccionados();
+}
+
+// Función para limpiar el carrito
+function limpiarCarrito() {
+  itemsSeleccionados.innerHTML = "";
+  guardarProductosSeleccionados();
+  actualizarTotal(0);
+}
+
+// Función para calcular el precio total de los elementos seleccionados
+function calcularTotal() {
+  let total = 0;
+  const items = itemsSeleccionados.getElementsByTagName("li");
+  for (const item of items) {
+    const productoPrecio = parseFloat(item.dataset.productoPrecio);
+    if (!isNaN(productoPrecio)) {
+      total += productoPrecio;
+    }
+  }
+  actualizarTotal(total);
+}
+
+// Función para actualizar el precio total mostrado en el carrito
+function actualizarTotal(total) {
+  totalElement.textContent = "Total: S/ " + total.toFixed(2);
+}
+
+// Evento al hacer clic en el botón "Limpiar carrito"
+limpiarCarritoBtn.addEventListener("click", limpiarCarrito);
+
+// Evento al hacer clic en el botón "Calcular Total"
+calcularTotalBtn.addEventListener("click", calcularTotal);
+
+// Recuperar productos seleccionados del almacenamiento local y mostrarlos en el carrito
+function mostrarProductosSeleccionados() {
+  const productosSeleccionados = obtenerProductosSeleccionados();
+  for (const producto of productosSeleccionados) {
+    agregarAlCarrito(producto.id, producto.nombre, producto.precio);
+  }
+  calcularTotal();
+}
+
+// Guardar productos seleccionados en el almacenamiento local
+function guardarProductosSeleccionados() {
+  const productosSeleccionados = Array.from(
+    itemsSeleccionados.getElementsByTagName("li")
+  ).map((item) => ({
+    id: item.dataset.productoId,
+    nombre: item.textContent.split(" - ")[0],
+    precio: parseFloat(item.dataset.productoPrecio),
+  }));
+  localStorage.setItem(
+    "productosSeleccionados",
+    JSON.stringify(productosSeleccionados)
+  );
+}
+
+// Obtener productos seleccionados del almacenamiento local
+function obtenerProductosSeleccionados() {
+  const productosSeleccionadosJSON = localStorage.getItem(
+    "productosSeleccionados"
+  );
+  return productosSeleccionadosJSON
+    ? JSON.parse(productosSeleccionadosJSON)
+    : [];
+}
+
+// Mostrar productos seleccionados al cargar la página
+mostrarProductosSeleccionados();
+
+// Recorrer los botones "Agregar al carrito" y agregar un evento de clic a cada uno
+botonesAgregarCarrito.forEach(function (boton) {
+  boton.addEventListener("click", function () {
+    const productoId = boton.dataset.productoId;
+    const productoNombre = boton.dataset.productoNombre;
+    const productoPrecio = boton.dataset.productoPrecio;
+    agregarAlCarrito(productoId, productoNombre, productoPrecio);
+  });
+});
+
+</script>
+{% endblock %}
